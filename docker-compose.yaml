@@ -58,6 +58,19 @@ services:
     logging: *default-logging
 
   # Applications
+  realcoding-a:
+    image: ghcr.io/2024-realcoding/devlog_springboot_testing:latest
+    environment:
+      - TARGET_ONE_HOST=realcoding-b
+      - TARGET_TWO_HOST=realcoding-c
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317 # send traces to Tempo
+      - OTEL_SERVICE_NAME=realcoding-a # service name for Span
+      - OTEL_RESOURCE_ATTRIBUTES=compose_service=realcoding-a # add custom resource attribute to Span for Grafana Trace to Logs feature
+      - OTEL_METRICS_EXPORTER=none # disable metrics exporter
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=realcoding-a # override default value of management.metrics.tags.application in app/src/main/resources/application.properties
+    ports:
+      - "8090:8080"
+    logging: *default-logging
 
   app-a:
     # build: ./app/
