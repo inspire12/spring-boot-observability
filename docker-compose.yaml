@@ -59,7 +59,8 @@ services:
 
   # Applications
   realcoding-a:
-    image: ghcr.io/2024-realcoding/devlog_springboot_testing:latest
+#    image: ghcr.io/2024-realcoding/devlog_springboot_testing:latest
+    image: realcoding:m1
     environment:
       - TARGET_ONE_HOST=realcoding-b
       - TARGET_TWO_HOST=realcoding-c
@@ -69,7 +70,7 @@ services:
       - OTEL_METRICS_EXPORTER=none # disable metrics exporter
       - MANAGEMENT_METRICS_TAGS_APPLICATION=realcoding-a # override default value of management.metrics.tags.application in app/src/main/resources/application.properties
     ports:
-      - "8090:8080"
+      - "8090:8090"
     logging: *default-logging
 
   app-a:
