@@ -24,39 +24,16 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
 
-services:
-# time series db
-  influxdb:
-    image: influxdb:1.8.10-alpine
-    ports:
-      - "8086:8086"
-      - 25826:25826/udp
-    networks:
-      - db
-    volumes:
-      - ./influxdb/influx_init.iql:/docker-entrypoint-initdb.d/influx_init.iql
-      - ./influxdb/types.db:/usr/share/collectd/types.db:ro
-      - ./influxdb/data:/var/lib/influxdb
-      - ./influxdb/config/:/etc/influxdb/
+
 # datalake
 # s3
-# info db
-  mysql:
-    image: mongodb/atlas
-    privileged: true
-    command: |
-      /bin/bash -c "atlas deployments setup --type local --port 27778 --bindIpAll --username root --password {your-password} --force && tail -f /dev/null"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - 27778:27778
-    networks:
-      - db
+
 #  airflow:
 #    image:
 #    volumes:
 #      - "airflow:/dag"
 #  kafkaConnector:
+services:
 
   ##Kafka 00
   Kafka00Service:
@@ -86,7 +63,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     networks:
       - kafka_network
-      - db
+      - kafka_fluentd
     volumes:
       - "Kafka00:/bitnami/kafka"
   ##Kafka 01
@@ -117,7 +94,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     networks:
       - kafka_network
-      - db
+      - kafka_fluentd
     volumes:
       - "Kafka01:/bitnami/kafka"
   ##Kafka 02
@@ -148,7 +125,7 @@ services:
       - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
     networks:
       - kafka_network
-      - db
+      - kafka_fluentd
     volumes:
       - "Kafka02:/bitnami/kafka"
 
@@ -167,15 +144,24 @@ services:
       #- KAFKA_CLUSTERS_0_METRICS_PORT=9999
     networks:
       - kafka_network
-      - db
+      - kafka_fluentd
+  fluentd:
+    image: fluentd-s3
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - kafka_network
+      - kafka_fluentd
+
 networks:
-  db:
+  kafka_fluentd:
     driver: bridge
   kafka_network:
     driver: bridge
 volumes:
-  setup:
-  elasticsearch:
   Kafka00:
     driver: local
   Kafka01:

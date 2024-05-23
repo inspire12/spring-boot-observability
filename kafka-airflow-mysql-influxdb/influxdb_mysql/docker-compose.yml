@@ -1,0 +1,29 @@
+services:
+# time series db
+  influxdb:
+    image: influxdb:1.8.10-alpine
+    ports:
+      - "8086:8086"
+      - 25826:25826/udp
+    networks:
+      - db
+    volumes:
+      - ./influxdb/influx_init.iql:/docker-entrypoint-initdb.d/influx_init.iql
+      - ./influxdb/types.db:/usr/share/collectd/types.db:ro
+      - ./influxdb/data:/var/lib/influxdb
+      - ./influxdb/config/:/etc/influxdb/
+  mysql:
+    image: mysql:8.0
+    #    restart: always
+    volumes:
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./mysql/sql:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=inspire12_api
+
+networks:
+  db:
+    driver: 'bridge'
