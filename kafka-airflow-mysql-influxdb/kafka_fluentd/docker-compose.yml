@@ -149,6 +149,10 @@ services:
     image: fluentd-s3
     volumes:
       - ./fluentd/conf:/fluentd/etc
+      - ./fluentd/log:/fluentd/log
+      - ./fluentd/plugins:/fluentd/plugins
+    depends_on:
+      - Kafka00Service
     ports:
       - "24224:24224"
       - "24224:24224/udp"
