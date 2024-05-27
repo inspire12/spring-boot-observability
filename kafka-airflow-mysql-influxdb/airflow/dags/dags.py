@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.providers.mysql.hooks.mysql import MySqlHook
+from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.mysql.operators.mysql import MySqlOperator
 import pandas as pd
@@ -9,7 +10,24 @@ import json
 import boto3
 import logging
 import pprint
-
+import pendulum
+import datetime
+from airflow.decorators import dag, task
+from airflow.models.param import Param
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.amazon.aws.operators.s3 import (
+    S3CopyObjectOperator,
+    S3CreateBucketOperator,
+    S3CreateObjectOperator,
+    S3DeleteBucketOperator,
+    S3DeleteBucketTaggingOperator,
+    S3DeleteObjectsOperator,
+    S3FileTransformOperator,
+    S3GetBucketTaggingOperator,
+    S3ListOperator,
+    S3ListPrefixesOperator,
+    S3PutBucketTaggingOperator,
+)
 
 default_args = {
     'owner': 'airflow',
@@ -95,4 +113,43 @@ with DAG(
 
     run_save_to_mysql = save_to_mysql()
 
-    # fetch_from_s3 >> run_process_data >> run_save_to_mysql()
+
+@dag(
+    description='주기적 삭제 대상 게스트 계정에게 push 사전 고지 완료 키 값 변경',
+    start_date=pendulum.datetime(2022, 6, 30),
+    catchup=False,
+    schedule=None,
+    tags=['account_purge_regular'],
+    params={
+        "object_key": Param(default="notify_read_complete_live/guest_purge_notify_1681782470.3132_150.csv",
+                            type="string"),
+    }
+)
+def account_guest_purge_push_notify_retry():
+    """
+    ### push 실패 처리용 DAG \n
+    #### read complete object key 를 파라미터로 전달 받아, 다시 push 전송되도록 key 값을 변경한다.
+    """
+
+    @task
+    def copy_and_delete(**kwargs):
+        AWS_CONN_ID = 'account-shield'
+        GUEST_PURGE_BUCKET_NAME = 'account-shield'
+
+        s3_hook = S3Hook(aws_conn_id=AWS_CONN_ID)
+        object_key = kwargs['params']['object_key']
+
+        key_list = object_key.split(',')
+        for key in key_list:
+            dest = 'notify_upload_live/{}'.format(key.replace('notify_read_complete_live/', ''))
+            print(dest)
+            # s3_hook.copy_object(source_bucket_key=key, source_bucket_name=GUEST_PURGE_BUCKET_NAME,
+            #                     dest_bucket_key=dest, dest_bucket_name=GUEST_PURGE_BUCKET_NAME)
+            # s3_hook.delete_objects(bucket=GUEST_PURGE_BUCKET_NAME, keys=key)
+
+        return key_list
+
+    copy_and_delete_task = copy_and_delete()
+
+    # account_guest_purge_push_notify_retry_dag = account_guest_purge_push_notify_retry()
+# fetch_from_s3 >> run_process_data >> run_save_to_mysql()

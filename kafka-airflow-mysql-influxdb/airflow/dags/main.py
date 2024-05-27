@@ -23,7 +23,7 @@ if __name__ == '__main__':
     for raw_bucket in s3r.buckets.all():
         print(raw_bucket.name)
     bucket = s3r.Bucket(s3_config['bucket_name'])
-    prefix = 'test/'
+    prefix = 'inspire12/'
     data = {
         "login_name": "inspire123",
         "created_at": "",

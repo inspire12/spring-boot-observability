@@ -25,14 +25,7 @@ x-airflow-common:
   user: "${AIRFLOW_UID:-50000}:0"
 
 
-# datalake
-# s3
 
-#  airflow:
-#    image:
-#    volumes:
-#      - "airflow:/dag"
-#  kafkaConnector:
 services:
 
   ##Kafka 00
@@ -153,12 +146,21 @@ services:
       - ./fluentd/plugins:/fluentd/plugins
     depends_on:
       - Kafka00Service
+      - Kafka01Service
+      - Kafka02Service
     ports:
       - "24224:24224"
       - "24224:24224/udp"
     networks:
       - kafka_network
       - kafka_fluentd
+    # datalake
+    # s3
+    #
+    #  airflow:
+    #    image:
+    #    volumes:
+    #      - "airflow:/dag"
 
 networks:
   kafka_fluentd:
